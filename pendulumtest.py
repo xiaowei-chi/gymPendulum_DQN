@@ -39,6 +39,7 @@ class Net(nn.Module):
         return actions_value
 
 def linear_func(theta,x):
+#     This function is used to represent the relation between action and cost.
     return theta[0,0]*x**2+theta[0,1]*x+theta[0,2]
     
 class DQN(object):
@@ -54,11 +55,11 @@ class DQN(object):
     def choose_action(self, x):
         x = torch.unsqueeze(torch.FloatTensor(x), 0)
         theta = self.eval_net.forward(x).data.numpy()
-        if np.random.uniform() < EPSILON:# 贪心算法
+        if np.random.uniform() < EPSILON:# greedy
             extremum_point = -theta[0,1]/(theta[0,0]*2)
             if extremum_point > -2. and extremum_point <2.: 
-                # net 返回的是表达cost 和 action 的参数
-                # 在 linear_func中找cost的最值，从而索引action
+             
+                # find action of the extreme value of cost between [-2,2]
                 list = np.array([linear_func(theta,extremum_point),
                 linear_func(theta,-2.),
                 linear_func(theta,2.)])
@@ -125,16 +126,13 @@ for i_episode in range(100):
         # take action
         next_state, reward, done, info = env.step(action)
 
-        # modify the reward
-        cos,sin,thetadot = next_state
-        # r = np.random.uniform()*16
-        print("thetadot ",thetadot)
-        # if abs(thetadot)>7.5:
-        #     done = True
-        cost=np.append(cost,reward)
+        cost=np.append(cost,reward)# record the cost 
         dqn.store_transition(state, action, reward, next_state)
 
-        ep_r += reward
+        ep_r += reward # sum of reward
+#         pendulum won't stop by it self. So I add a condition.
+        if abs(ep_r)>1000:
+            done = True
         state = next_state
         if dqn.memory_counter > MEMORY_CAPACITY:
             dqn.learn()
@@ -149,7 +147,7 @@ for i_episode in range(100):
 x = np.arange(cost.size)
 fig, ax = plt.subplots(figsize=(8,4))
 ax.plot(x, cost, 'b', label='Prediction')
-ax.legend(loc=2) # 2表示在左上角
+ax.legend(loc=2) 
 ax.set_xlabel('act')
 ax.set_ylabel('reward')
 plt.show()
